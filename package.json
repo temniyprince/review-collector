@@ -1,0 +1,14 @@
+{
+  "name": "review-collector",
+  "version": "1.0.0",
+  "description": "Review collector app with email reminders and click tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "nodemailer": "^6.9.16",
+    "dotenv": "^16.4.7"
+  }
+}
