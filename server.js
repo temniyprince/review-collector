@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const express = require('express');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
 const app = express();
@@ -21,18 +20,7 @@ function logEvent(type, data) {
   if (eventLog.length > 100) eventLog.shift();
 }
 
-// Nodemailer transport
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT),
-  secure: false,
-  requireTLS: true,
-  tls: { rejectUnauthorized: false },
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+
 
 // POST /webhook — accept order, schedule review email
 app.post('/webhook', (req, res) => {
@@ -69,18 +57,29 @@ app.post('/webhook', (req, res) => {
 З повагою,
 Команда Barbershop Garage`;
 
-    transporter.sendMail({
-      from: "Review Bot <bramljahv@gmail.com>",
-      to: customer_email,
-      subject: 'Як вам стрижка? ✂️',
-      text,
-    })
-      .then(() => {
-        emailTimestamps.set(customer_email, Date.now());
-        stats.sent++;
-        logEvent('sent', { email: customer_email });
-        console.log(`Email sent to ${customer_email}, review id: ${reviewId}`);
-      })
+    fetch('https://sandbox.api.mailtrap.io/api/send/3840028', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.SMTP_PASS}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    from: { email: 'bramljahv@gmail.com', name: 'Barbershop Garage' },
+    to: [{ email: customer_email }],
+    subject: 'Як вам стрижка? ✂️',
+    text
+  })
+})
+.then(r => r.json())
+.then(() => {
+  emailTimestamps.set(customer_email, Date.now());
+  stats.sent++;
+  logEvent('sent', { email: customer_email });
+  console.log(`Email sent to ${customer_email}, review id: ${reviewId}`);
+})
+.catch((err) => {
+  console.error(`Failed to send email to ${customer_email}:`, err.message);
+});
       .catch((err) => {
         console.error(`Failed to send email to ${customer_email}:`, err.message);
       });
